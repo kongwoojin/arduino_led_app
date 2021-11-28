@@ -3,9 +3,9 @@ package com.kongjak.ardionoledcontroller
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothSocket
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
@@ -13,12 +13,14 @@ import android.widget.ListView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
 import com.kongjak.ardionoledcontroller.databinding.ActivityConnectBinding
-import java.io.IOException
 import java.util.*
 import kotlin.collections.ArrayList
+import android.content.Context.MODE_PRIVATE
+
+import android.content.SharedPreferences
+
+
 
 
 class ConnectActivity : AppCompatActivity() {
@@ -33,8 +35,8 @@ class ConnectActivity : AppCompatActivity() {
     var btArrayAdapter: ArrayAdapter<String>? = null
     var deviceAddressArray: ArrayList<String>? = null
 
-    lateinit var listView: ListView
 
+    lateinit var listView: ListView
 
     private lateinit var binding: ActivityConnectBinding
 
@@ -48,7 +50,7 @@ class ConnectActivity : AppCompatActivity() {
 
         listView.onItemClickListener = myOnItemClickListener()
 
-        val permission_list = arrayOf<String>(
+        val permission_list = arrayOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
             Manifest.permission.ACCESS_COARSE_LOCATION
         )
@@ -98,33 +100,20 @@ class ConnectActivity : AppCompatActivity() {
             ).show()
             val name: String? = btArrayAdapter!!.getItem(position) // get name
             val address: String = deviceAddressArray!![position] // get address
-            var flag = true
             val device: BluetoothDevice = bluetoothAdapter.getRemoteDevice(address)
 
-            val gson = Gson()
-            val strDevice: String = gson.toJson(device)
+            Log.d("Test", device.toString())
 
-            val sp = getSharedPreferences("shared", MODE_PRIVATE)
+            val btService = BTService(device)
+            btService.btSocketStart()
+            btService.startBt()
+
+            val sp = getSharedPreferences("btDevice", MODE_PRIVATE)
             val editor = sp.edit()
-            editor.putString("device", strDevice)
-
+            editor.putString("device", address)
             editor.apply()
 
-            lateinit var btSocket: BluetoothSocket
-
-            // create & connect socket
-            try {
-                btSocket = device.createRfcommSocketToServiceRecord(uuid)
-                btSocket.connect()
-            } catch (e: IOException) {
-                flag = false
-                e.printStackTrace()
-            }
-
-            if (flag) {
-                connectedThread = ConnectedThread(btSocket)
-                connectedThread.start()
-            }
+            Toast.makeText(baseContext, name, Toast.LENGTH_SHORT).show()
         }
     }
 }

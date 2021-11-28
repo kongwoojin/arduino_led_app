@@ -27,6 +27,16 @@
         app:layout_constraintTop_toBottomOf="@id/text_status"/>
 
     <Button
+        android:id="@+id/btn_color"
+        android:text="Choose Color"
+        android:onClick="onClickButtonChoose"
+        android:layout_width="200dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btn_pair"/>
+
+    <Button
         android:id="@+id/btn_send"
         android:text="Send a"
         android:onClick="onClickButtonSend"
@@ -34,7 +44,7 @@
         android:layout_height="wrap_content"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_pair"/>
+        app:layout_constraintTop_toBottomOf="@id/btn_color"/>
 
     <ListView
         android:id="@+id/listview"
