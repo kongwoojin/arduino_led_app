@@ -34,6 +34,7 @@ class BTService(private var device: BluetoothDevice) {
 
     fun close() {
         connectedThread = ConnectedThread(btSocket)
+        connectedThread.write("off")
         connectedThread.cancel()
     }
 

@@ -27,7 +27,6 @@ class ConnectActivity : AppCompatActivity() {
 
     private val REQUEST_ENABLE_BT = 1
 
-    private lateinit var connectedThread: ConnectedThread
     lateinit var bluetoothAdapter: BluetoothAdapter
 
     var uuid: UUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb")
@@ -59,6 +58,7 @@ class ConnectActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
 
         binding.fab.setOnClickListener {
+            Log.d("Test", "Searching...")
             search()
         }
 
@@ -74,7 +74,7 @@ class ConnectActivity : AppCompatActivity() {
         listView.adapter = btArrayAdapter
     }
 
-    fun search() {
+    private fun search() {
         btArrayAdapter!!.clear()
         if (deviceAddressArray != null && !deviceAddressArray!!.isEmpty()) {
             deviceAddressArray!!.clear()

@@ -3,19 +3,25 @@ package com.kongjak.ardionoledcontroller
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
+import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
-import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import com.google.android.material.snackbar.Snackbar
 import dev.sasikanth.colorsheet.ColorSheet
 import dev.sasikanth.colorsheet.utils.ColorSheetUtils
 
-
 class MainActivity : AppCompatActivity() {
 
-    var btnSend: Button? = null
-
-    var ledColor: String = "#ffffff"
+    var ledColor: String = "#FFFFFF"
+    var isConnected: Boolean = false
+    lateinit var sp: SharedPreferences
+    lateinit var address: String
+    var isBTServiceInitialized: Boolean = false
 
     private lateinit var btService: BTService
 
@@ -23,18 +29,11 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        btnSend = findViewById(R.id.btn_send)
+        sp = getSharedPreferences("btDevice", MODE_PRIVATE)
+        address = sp.getString("device", "00:00:00:00:00:00").toString()
 
-        init()
-    }
-
-    fun onClickButtonSend(view: View?) {
-        ledOn()
-    }
-
-    fun onClickButtonPair(view: View) {
-        val intent = Intent(this, ConnectActivity::class.java)
-        startActivity(intent)
+        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
     }
 
     fun onClickButtonChoose(view: View) {
@@ -44,9 +43,23 @@ class MainActivity : AppCompatActivity() {
             colors = colors,
             listener = { color ->
                 ledColor = ColorSheetUtils.colorToHex(color)
-                ledOn()
+                Log.d("Test", "Color Set to " + ColorSheetUtils.colorToHex(color))
+                if (this::btService.isInitialized) {
+                    ledOn()
+                    Log.d("Test", ledColor)
+                } else {
+                    Snackbar.make(view, "Connect Lamp First!", Snackbar.LENGTH_SHORT).show()
+                }
             })
             .show(supportFragmentManager)
+    }
+
+    fun onClickButtonOff(view: View) {
+        if (isBTServiceInitialized) {
+            ledOff()
+        } else {
+            Snackbar.make(view, "Connect Lamp First!", Snackbar.LENGTH_SHORT).show()
+        }
     }
 
     private fun ledOn() {
@@ -54,22 +67,67 @@ class MainActivity : AppCompatActivity() {
         btService.writeBt(ledColor)
     }
 
-    fun init() {
-        val sp = getSharedPreferences("btDevice", MODE_PRIVATE)
-        val address = sp.getString("device", "00:00:00:00:00:00")
+    private fun ledOff() {
+        btService.startBt()
+        btService.writeBt("off")
+    }
 
+
+    private fun connect() {
         val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
         val device: BluetoothDevice = bluetoothAdapter.getRemoteDevice(address)
 
         btService = BTService(device)
         btService.btSocketStart()
+        isBTServiceInitialized = !isBTServiceInitialized
+    }
 
+    private fun disconnect() {
+        if (btService.isConnected()) {
+            btService.close()
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        if (btService.isConnected()) {
-            btService.close()
+        disconnect()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.main, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem) = when (item.itemId) {
+        R.id.action_settings -> {
+            val intent = Intent(this, ConnectActivity::class.java)
+            startActivity(intent)
+            true
         }
+
+        R.id.action_connect -> {
+            if (isConnected) {
+                disconnect()
+                isConnected = !isConnected
+                item.icon = resources.getDrawable(R.drawable.ic_bluetooth, null)
+            } else if (!isConnected) {
+                connect()
+                ledOn()
+                isConnected = !isConnected
+                item.icon = resources.getDrawable(R.drawable.ic_bluetooth_connected, null)
+            }
+            true
+        }
+
+        else -> {
+            // If we got here, the user's action was not recognized.
+            // Invoke the superclass to handle it.
+            super.onOptionsItemSelected(item)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        address = sp.getString("device", "00:00:00:00:00:00").toString()
     }
 }
